@@ -1,6 +1,6 @@
-# LineAnimationApp
+# AxioCurve
 
-LineAnimationApp 是一个基于 MATLAB App Designer 风格代码实现的曲线动画绘图工具，面向科研数据、实验曲线、流变曲线和多列 CSV 数据的快速可视化。它支持静态预览、动画播放、双 y 轴绘图、科研配色、字体与图例样式控制，并可导出 GIF、MP4、PNG 序列以及常见静态图片格式。
+AxioCurve 是一个基于 MATLAB App Designer 风格代码实现的科研曲线动画绘图工具。名称来自 axis + curve，强调双轴曲线、科研图形和动画导出。它面向实验数据、流变曲线、多列 CSV 数据和论文/PPT 可视化场景，支持静态预览、动画播放、双 y 轴绘图、科研配色、字体与图例样式控制，并可导出 GIF、MP4、PNG 序列以及常见静态图片格式。
 
 > 当前仓库同时提供 MATLAB 源码和 Windows 下载压缩包；仓库不提交 MATLAB Compiler 中间目录、测试缓存和本地导出文件。
 
@@ -8,15 +8,15 @@ LineAnimationApp 是一个基于 MATLAB App Designer 风格代码实现的曲线
 
 不想打开 MATLAB 的用户可以直接下载仓库中的 Windows 压缩包：
 
-- 下载文件：`dist/LineAnimation-Windows.zip`
-- 解压后运行：`LineAnimation.exe`
+- 下载文件：`dist/AxioCurve-Windows.zip`
+- 解压后运行：`AxioCurve.exe`
 - 推荐系统：Windows 10 / Windows 11
 
 说明：
 
-- 如果电脑已经安装 MATLAB Runtime R2024a，解压后可直接运行 `LineAnimation.exe`。
-- 如果首次运行提示缺少 MATLAB Runtime，请先运行压缩包中的 `MyAppInstaller_web.exe`，按提示安装运行环境后再打开 `LineAnimation.exe`。
-- `MyAppInstaller_web.exe` 是 MATLAB Compiler 生成的联网安装器，会从 MathWorks 获取所需 Runtime。
+- 如果电脑已经安装 MATLAB Runtime R2024a，解压后可直接运行 `AxioCurve.exe`。
+- 如果首次运行提示缺少 MATLAB Runtime，请先运行压缩包中的 `AxioCurve_RuntimeInstaller_web.exe`，按提示安装运行环境后再打开 `AxioCurve.exe`。
+- `AxioCurve_RuntimeInstaller_web.exe` 是 MATLAB Compiler 生成的联网安装器，会从 MathWorks 获取所需 Runtime。
 - 压缩包只包含运行软件需要的文件，不包含源码调试缓存、Compiler 中间目录和本地测试文件。
 
 ## 功能概览
@@ -59,10 +59,10 @@ flowchart LR
 
 ### 使用 exe
 
-1. 下载 `dist/LineAnimation-Windows.zip`。
+1. 下载 `dist/AxioCurve-Windows.zip`。
 2. 解压到任意英文或中文路径均可。
-3. 双击 `LineAnimation.exe`。
-4. 若系统提示缺少 MATLAB Runtime，先运行 `MyAppInstaller_web.exe` 安装运行环境。
+3. 双击 `AxioCurve.exe`。
+4. 若系统提示缺少 MATLAB Runtime，先运行 `AxioCurve_RuntimeInstaller_web.exe` 安装运行环境。
 
 ### 使用 MATLAB 源码
 
@@ -71,7 +71,7 @@ flowchart LR
 3. 在命令行运行：
 
 ```matlab
-LineAnimationApp
+AxioCurve
 ```
 
 4. 点击 `选择数据文件` 导入 CSV。
@@ -115,7 +115,7 @@ Time,height-0mm,height-5mm,height-10mm,RightAxisData
 如果需要打包为 Windows exe，可使用 MATLAB Application Compiler：
 
 1. 确认 MATLAB Compiler 已安装。
-2. 将 `LineAnimationApp.m` 设置为主文件。
+2. 将 `AxioCurve.m` 设置为主文件。
 3. 根据需要设置应用名称、图标、作者信息和安装路径。
 4. 打包后建议先在 MATLAB 内运行源码版本确认功能正常，再测试 exe。
 
@@ -131,9 +131,9 @@ Time,height-0mm,height-5mm,height-10mm,RightAxisData
 
 ```text
 .
-├── LineAnimationApp.m   # 主程序，包含 UI、绘图、动画、导出和设置持久化逻辑
+├── AxioCurve.m          # 主程序，包含 UI、绘图、动画、导出和设置持久化逻辑
 ├── dist/
-│   └── LineAnimation-Windows.zip  # Windows 用户下载包，包含 exe 和 Runtime web installer
+│   └── AxioCurve-Windows.zip      # Windows 用户下载包，包含 exe 和 Runtime web installer
 ├── README.md            # 项目说明
 ├── LICENSE              # 开源许可证
 └── .gitignore           # 忽略打包产物和本地临时文件

@@ -9,6 +9,7 @@
 
 # MATLAB Compiler / Application Compiler outputs
 LineAnimation.prj
+AxioCurve.prj
 LineAnimation/
 for_testing/
 for_redistribution/

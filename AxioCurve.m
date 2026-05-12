@@ -1,4 +1,4 @@
-classdef LineAnimationApp < matlab.apps.AppBase
+classdef AxioCurve < matlab.apps.AppBase
 
     % Properties (UI Components)
     properties (Access = public)
@@ -160,9 +160,9 @@ classdef LineAnimationApp < matlab.apps.AppBase
         end
 
         function writeErrorLog(~, ME, context)
-            logDir = fullfile(getenv('USERPROFILE'), 'Documents', 'LineAnimationAppLogs');
+            logDir = fullfile(getenv('USERPROFILE'), 'Documents', 'AxioCurveLogs');
             if ~isfolder(logDir), mkdir(logDir); end
-            logFile = fullfile(logDir, 'LineAnimationApp_error.log');
+            logFile = fullfile(logDir, 'AxioCurve_error.log');
             fid = fopen(logFile, 'a');
             if fid < 0, return; end
             cleaner = onCleanup(@() fclose(fid));
@@ -864,14 +864,19 @@ classdef LineAnimationApp < matlab.apps.AppBase
                 s.MarkerSizeEdit = app.MarkerSizeEdit.Value;
                 s.RecentColors = app.RecentColors;
                 s.Format = app.ExportFormatDrop.Value;
-                setpref('LineAnimationApp', 'Settings', s);
+                setpref('AxioCurve', 'Settings', s);
             catch
             end
         end
 
         function loadSettings(app)
-            if ispref('LineAnimationApp', 'Settings')
+            if ispref('AxioCurve', 'Settings')
+                s = getpref('AxioCurve', 'Settings');
+            elseif ispref('LineAnimationApp', 'Settings')
                 s = getpref('LineAnimationApp', 'Settings');
+            else
+                return;
+            end
                 try
                     if isfield(s, 'ColorDrop') && any(strcmp(app.ColorDrop.Items, s.ColorDrop)), app.ColorDrop.Value = s.ColorDrop; end
                     if isfield(s, 'FontDrop') && any(strcmp(app.FontDrop.Items, s.FontDrop)), app.FontDrop.Value = s.FontDrop; end
@@ -927,7 +932,6 @@ classdef LineAnimationApp < matlab.apps.AppBase
                     end
                 catch
                 end
-            end
             app.syncAxisStyleEnable();
             app.UpdateAxesSize();
         end
@@ -1523,7 +1527,7 @@ classdef LineAnimationApp < matlab.apps.AppBase
 
     methods (Access = private)
         function createComponents(app)
-            app.UIFigure = uifigure('Name', 'LineAnimationApp (WYSIWYG Edition)', 'Position', [50, 50, 1350, 780]);
+            app.UIFigure = uifigure('Name', 'AxioCurve (Scientific Curve Animator)', 'Position', [50, 50, 1350, 780]);
             app.UIFigure.CloseRequestFcn = @(src, event) app.safeRun(@() app.AppCloseRequest(src, event), '关闭程序');
             
             app.GridLayout = uigridlayout(app.UIFigure, [2 3]);
@@ -1802,7 +1806,7 @@ classdef LineAnimationApp < matlab.apps.AppBase
             statusGrid = uigridlayout(statusPanel, [1 2]);
             statusGrid.ColumnWidth = {'1x', 300};
             statusGrid.Padding = [6 0 6 0];
-            app.StatusLabel = uilabel(statusGrid, 'Text', '状态：等待操作 | 错误日志：Documents\\LineAnimationAppLogs\\LineAnimationApp_error.log', 'FontColor', [0.35 0.35 0.35]);
+            app.StatusLabel = uilabel(statusGrid, 'Text', '状态：等待操作 | 错误日志：Documents\\AxioCurveLogs\\AxioCurve_error.log', 'FontColor', [0.35 0.35 0.35]);
             authText = '作者：ZYY        邮箱：zhangyiye1860@163.com';
             app.AuthorLabel = uilabel(statusGrid, 'Text', authText, 'HorizontalAlignment', 'right', 'FontSize', 10, 'FontColor', [0.45 0.45 0.45]);
             app.syncAxisStyleEnable();
@@ -1815,7 +1819,7 @@ classdef LineAnimationApp < matlab.apps.AppBase
     end
 
     methods (Access = public)
-        function app = LineAnimationApp()
+        function app = AxioCurve()
             createComponents(app); app.loadSettings(); app.UIFigure.Visible = 'on';
         end
     end

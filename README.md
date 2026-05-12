@@ -119,7 +119,7 @@ Time,height-0mm,height-5mm,height-10mm,RightAxisData
 3. 根据需要设置应用名称、图标、作者信息和安装路径。
 4. 打包后建议先在 MATLAB 内运行源码版本确认功能正常，再测试 exe。
 
-本仓库不提交打包后的 exe、installer、`for_testing`、`for_redistribution` 等产物，以保持源码仓库简洁。
+仓库只保留源码和 `dist/AxioCurve-Windows.zip` 下载包，不提交 `for_testing`、`for_redistribution` 等 MATLAB Compiler 中间目录，以保持项目结构简洁。
 
 ## 环境要求
 

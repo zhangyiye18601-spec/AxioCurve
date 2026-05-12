@@ -1,0 +1,32 @@
+# MATLAB generated files
+*.asv
+*.autosave
+*.m~
+*.slxc
+*.mex*
+*.mlappinstall
+*.log
+
+# MATLAB Compiler / Application Compiler outputs
+LineAnimation.prj
+LineAnimation/
+for_testing/
+for_redistribution/
+for_redistribution_files_only/
+PackagingLog.html
+*.exe
+*.ctf
+
+# Local OS/editor files
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+
+# Temporary data and exports
+*.tmp
+*.bak
+*.gif
+*.mp4
+frame_*.png

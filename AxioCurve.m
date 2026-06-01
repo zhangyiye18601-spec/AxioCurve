@@ -4,17 +4,17 @@ classdef AxioCurve < matlab.apps.AppBase
     properties (Access = public)
         UIFigure      matlab.ui.Figure
         GridLayout    matlab.ui.container.GridLayout
-        
+
         % Left Panel Components
         LeftPanel        matlab.ui.container.Panel
-        FindReplacePanel matlab.ui.container.Panel 
+        FindReplacePanel matlab.ui.container.Panel
         FindEdit         matlab.ui.control.EditField
         ReplaceEdit      matlab.ui.control.EditField
         ReplaceBtn       matlab.ui.control.Button
-        SelectAllYBtn    matlab.ui.control.Button 
-        ClearYBtn        matlab.ui.control.Button 
+        SelectAllYBtn    matlab.ui.control.Button
+        ClearYBtn        matlab.ui.control.Button
         DataTable        matlab.ui.control.Table
-        
+
         % Middle Panel Components
         MiddlePanel   matlab.ui.container.Panel
         MiddleTabs    matlab.ui.container.TabGroup
@@ -23,14 +23,14 @@ classdef AxioCurve < matlab.apps.AppBase
         StyleTab      matlab.ui.container.Tab
         ExportTab     matlab.ui.container.Tab
         LoadBtn       matlab.ui.control.Button
-        
+
         AxesPanel     matlab.ui.container.Panel
         XMinEdit      matlab.ui.control.NumericEditField
         XMaxEdit      matlab.ui.control.NumericEditField
         YMinEdit      matlab.ui.control.NumericEditField
         YMaxEdit      matlab.ui.control.NumericEditField
-        XTickSpaceEdit matlab.ui.control.NumericEditField 
-        YTickSpaceEdit matlab.ui.control.NumericEditField 
+        XTickSpaceEdit matlab.ui.control.NumericEditField
+        YTickSpaceEdit matlab.ui.control.NumericEditField
         YRightMinEdit matlab.ui.control.NumericEditField
         YRightMaxEdit matlab.ui.control.NumericEditField
         YRightTickSpaceEdit matlab.ui.control.NumericEditField
@@ -40,7 +40,7 @@ classdef AxioCurve < matlab.apps.AppBase
         YDecEdit      matlab.ui.control.NumericEditField
         YRightFormatDrop matlab.ui.control.DropDown
         YRightDecEdit matlab.ui.control.NumericEditField
-        
+
         CurvePanel    matlab.ui.container.Panel
         ColorDrop     matlab.ui.control.DropDown
         FontDrop      matlab.ui.control.DropDown
@@ -50,20 +50,27 @@ classdef AxioCurve < matlab.apps.AppBase
         LgdFontEdit   matlab.ui.control.NumericEditField
         LegendShapeDrop matlab.ui.control.DropDown
         MarkerSizeEdit matlab.ui.control.NumericEditField
-        WidthEdit     matlab.ui.control.NumericEditField  
-        HeightEdit    matlab.ui.control.NumericEditField 
-        DPIEdit       matlab.ui.control.NumericEditField 
+        WidthEdit     matlab.ui.control.NumericEditField
+        HeightEdit    matlab.ui.control.NumericEditField
+        DPIEdit       matlab.ui.control.NumericEditField
         IntervalEdit  matlab.ui.control.NumericEditField
         PreviewBtn    matlab.ui.control.Button
         DrawBtn       matlab.ui.control.Button
         ResetBtn      matlab.ui.control.Button
-        
+
         ExportPanel   matlab.ui.container.Panel
         ExportFormatDrop matlab.ui.control.DropDown
         ExportBtn     matlab.ui.control.Button
         ProgressBg    matlab.ui.container.Panel
         ProgressFill  matlab.ui.container.Panel
         ProgressText  matlab.ui.control.Label
+        OutConvertPanel matlab.ui.container.Panel
+        SelectOutBtn  matlab.ui.control.Button
+        ConvertOutBtn matlab.ui.control.Button
+        ConvertStatusLabel matlab.ui.control.TextArea
+        ConvertProgressBg matlab.ui.container.Panel
+        ConvertProgressFill matlab.ui.container.Panel
+        ConvertProgressText matlab.ui.control.Label
         AuthorLabel   matlab.ui.control.Label
         StatusLabel   matlab.ui.control.Label
 
@@ -82,34 +89,34 @@ classdef AxioCurve < matlab.apps.AppBase
         XAxisFontSizeEdit matlab.ui.control.NumericEditField
         YLeftAxisFontSizeEdit matlab.ui.control.NumericEditField
         YRightAxisFontSizeEdit matlab.ui.control.NumericEditField
-        
+
         % Right Panel Components
         RightPanel    matlab.ui.container.Panel
-        AxesWrapper   matlab.ui.container.Panel 
-        PlotArea      matlab.ui.container.Panel 
-        UIAxes        matlab.graphics.axis.Axes 
-        BottomLayout  matlab.ui.container.GridLayout 
-        
+        AxesWrapper   matlab.ui.container.Panel
+        PlotArea      matlab.ui.container.Panel
+        UIAxes        matlab.graphics.axis.Axes
+        BottomLayout  matlab.ui.container.GridLayout
+
         XLabelEdit    matlab.ui.control.EditField
         YLabelEdit    matlab.ui.control.EditField
         YRightLabelEdit matlab.ui.control.EditField
-        
+
         % 坐标轴开关组
         FontBoldChk   matlab.ui.control.CheckBox
-        TickOutChk    matlab.ui.control.CheckBox 
+        TickOutChk    matlab.ui.control.CheckBox
         GridLineChk   matlab.ui.control.CheckBox
-        
+
         % 图例开关组
         LgdVisibleChk matlab.ui.control.CheckBox
         LgdBgChk      matlab.ui.control.CheckBox
         LgdBorderChk  matlab.ui.control.CheckBox
-        LgdColsEdit   matlab.ui.control.NumericEditField 
-        
-        LgdXSlider    matlab.ui.control.Slider 
+        LgdColsEdit   matlab.ui.control.NumericEditField
+
+        LgdXSlider    matlab.ui.control.Slider
         LgdXEdit      matlab.ui.control.NumericEditField
-        LgdYSlider    matlab.ui.control.Slider 
+        LgdYSlider    matlab.ui.control.Slider
         LgdYEdit      matlab.ui.control.NumericEditField
-        
+
         % Data & State storage
         RawData
         Headers
@@ -124,10 +131,16 @@ classdef AxioCurve < matlab.apps.AppBase
         LegendLabelsLeft
         LegendLabelsRight
         HasRightAxis = false;
-        
+
         CurrentFrame = 1;
         IsPlaying = false;
         RecentColors = [];
+        SelectedOutFiles = {};
+        LastCsvImportDir = '';
+        LastPlotExportDir = '';
+        LastPngSequenceDir = '';
+        LastOutImportDir = '';
+        LastOutExportDir = '';
     end
 
     methods (Access = private)
@@ -675,24 +688,27 @@ classdef AxioCurve < matlab.apps.AppBase
         end
 
         function LoadBtnPushed(app, varargin)
-            [file, path] = uigetfile('*.csv', '选择 CSV 数据文件');
+            startDir = app.getDialogStartFolder(app.LastCsvImportDir);
+            [file, path] = uigetfile('*.csv', '选择 CSV 数据文件', startDir);
             app.restoreMainWindow();
             if isequal(file, 0), return; end
-            
+            app.LastCsvImportDir = path;
+            app.saveSettings();
+
             filename = fullfile(path, file);
             opts = detectImportOptions(filename);
             app.Headers = opts.VariableNames;
             app.RawData = readmatrix(filename);
-            
+
             app.XMinEdit.Value = 0; app.XMaxEdit.Value = 0;
-            app.YMinEdit.Value = 0; app.YMaxEdit.Value = 0; 
+            app.YMinEdit.Value = 0; app.YMaxEdit.Value = 0;
             app.YRightMinEdit.Value = 0; app.YRightMaxEdit.Value = 0;
             app.XTickSpaceEdit.Value = 0; app.YTickSpaceEdit.Value = 0;
             app.YRightTickSpaceEdit.Value = 0;
             app.XFormatDrop.Value = '常规整数'; app.XDecEdit.Value = 0;
             app.YFormatDrop.Value = '常规整数'; app.YDecEdit.Value = 0;
             app.YRightFormatDrop.Value = '常规整数'; app.YRightDecEdit.Value = 0;
-            
+
             num_vars = length(app.Headers);
             tableData = cell(num_vars, 4);
             for i = 1:num_vars
@@ -700,15 +716,15 @@ classdef AxioCurve < matlab.apps.AppBase
                 idx = strfind(raw_name, 'hight');
                 if ~isempty(idx), clean_name = strrep(raw_name(idx:end), '_', '-');
                 else, clean_name = strrep(raw_name, '_', '-'); end
-                
-                tableData{i, 1} = clean_name; 
-                tableData{i, 2} = false; 
+
+                tableData{i, 1} = clean_name;
+                tableData{i, 2} = false;
                 tableData{i, 3} = false;
                 tableData{i, 4} = false;
             end
             app.DataTable.Data = tableData;
-            
-            app.RecomputeDataAndLimits(); 
+
+            app.RecomputeDataAndLimits();
             app.ResetBtnPushed();
         end
 
@@ -793,38 +809,38 @@ classdef AxioCurve < matlab.apps.AppBase
         function LgdYSliderChanging(app, event), app.LgdYEdit.Value = event.Value; app.UpdateLegendPosOnly(app.LgdXEdit.Value, event.Value); end
         function LgdXEditChanged(app, varargin)
             bounds = app.LgdXEdit.Limits;
-            val = min(max(app.LgdXEdit.Value, bounds(1)), bounds(2)); 
-            app.LgdXEdit.Value = val; app.LgdXSlider.Value = val; 
-            app.UpdateLegendPosOnly(val, app.LgdYEdit.Value); 
+            val = min(max(app.LgdXEdit.Value, bounds(1)), bounds(2));
+            app.LgdXEdit.Value = val; app.LgdXSlider.Value = val;
+            app.UpdateLegendPosOnly(val, app.LgdYEdit.Value);
         end
         function LgdYEditChanged(app, varargin)
             bounds = app.LgdYEdit.Limits;
-            val = min(max(app.LgdYEdit.Value, bounds(1)), bounds(2)); 
-            app.LgdYEdit.Value = val; app.LgdYSlider.Value = val; 
-            app.UpdateLegendPosOnly(app.LgdXEdit.Value, val); 
+            val = min(max(app.LgdYEdit.Value, bounds(1)), bounds(2));
+            app.LgdYEdit.Value = val; app.LgdYSlider.Value = val;
+            app.UpdateLegendPosOnly(app.LgdXEdit.Value, val);
         end
 
         function UpdateLegendPosOnly(app, x_val, y_val)
             if ~isvalid(app) || ~isvalid(app.UIAxes), return; end
             if ~isempty(app.UIAxes.Legend)
-                lgd = app.UIAxes.Legend; 
-                
+                lgd = app.UIAxes.Legend;
+
                 old_ax_units = app.UIAxes.Units;
                 app.UIAxes.Units = 'normalized';
                 ax_pos = app.UIAxes.Position;
                 app.UIAxes.Units = old_ax_units;
-                
+
                 old_lgd_units = lgd.Units;
                 lgd.Units = 'normalized';
                 lgd_pos = lgd.Position;
-                
+
                 nx = ax_pos(1) + x_val * max(0.001, ax_pos(3) - lgd_pos(3));
                 ny = ax_pos(2) + y_val * max(0.001, ax_pos(4) - lgd_pos(4));
-                
-                lgd.Location = 'none'; 
+
+                lgd.Location = 'none';
                 lgd.Position(1:2) = [nx, ny];
                 lgd.Units = old_lgd_units;
-                
+
                 drawnow limitrate;
             end
         end
@@ -840,12 +856,12 @@ classdef AxioCurve < matlab.apps.AppBase
                 s.XTickSpaceEdit = app.XTickSpaceEdit.Value; s.YTickSpaceEdit = app.YTickSpaceEdit.Value;
                 s.YRightTickSpaceEdit = app.YRightTickSpaceEdit.Value;
                 s.LgdXSlider = app.LgdXSlider.Value; s.LgdYSlider = app.LgdYSlider.Value;
-                s.FontBoldChk = app.FontBoldChk.Value; 
-                s.TickOutChk = app.TickOutChk.Value; 
+                s.FontBoldChk = app.FontBoldChk.Value;
+                s.TickOutChk = app.TickOutChk.Value;
                 s.LgdBgChk = app.LgdBgChk.Value; s.LgdBorderChk = app.LgdBorderChk.Value;
-                s.GridLineChk = app.GridLineChk.Value; 
-                s.LgdVisibleChk = app.LgdVisibleChk.Value; s.LgdColsEdit = app.LgdColsEdit.Value; 
-                s.IntervalEdit = app.IntervalEdit.Value; s.WidthEdit = app.WidthEdit.Value; 
+                s.GridLineChk = app.GridLineChk.Value;
+                s.LgdVisibleChk = app.LgdVisibleChk.Value; s.LgdColsEdit = app.LgdColsEdit.Value;
+                s.IntervalEdit = app.IntervalEdit.Value; s.WidthEdit = app.WidthEdit.Value;
                 s.HeightEdit = app.HeightEdit.Value; s.DPIEdit = app.DPIEdit.Value;
                 s.XLabelEdit = app.XLabelEdit.Value; s.YLabelEdit = app.YLabelEdit.Value; s.YRightLabelEdit = app.YRightLabelEdit.Value;
                 s.AxisStyle.XOverride = app.XStyleOverrideChk.Value;
@@ -864,6 +880,11 @@ classdef AxioCurve < matlab.apps.AppBase
                 s.MarkerSizeEdit = app.MarkerSizeEdit.Value;
                 s.RecentColors = app.RecentColors;
                 s.Format = app.ExportFormatDrop.Value;
+                s.LastCsvImportDir = app.LastCsvImportDir;
+                s.LastPlotExportDir = app.LastPlotExportDir;
+                s.LastPngSequenceDir = app.LastPngSequenceDir;
+                s.LastOutImportDir = app.LastOutImportDir;
+                s.LastOutExportDir = app.LastOutExportDir;
                 setpref('AxioCurve', 'Settings', s);
             catch
             end
@@ -892,10 +913,10 @@ classdef AxioCurve < matlab.apps.AppBase
                 try app.LgdXSlider.Value = s.LgdXSlider; app.LgdXEdit.Value = s.LgdXSlider; catch, end
                 try app.LgdYSlider.Value = s.LgdYSlider; app.LgdYEdit.Value = s.LgdYSlider; catch, end
                 try app.FontBoldChk.Value = s.FontBoldChk; catch, end
-                try app.TickOutChk.Value = s.TickOutChk; catch, end 
+                try app.TickOutChk.Value = s.TickOutChk; catch, end
                 try app.LgdBgChk.Value = s.LgdBgChk; app.LgdBorderChk.Value = s.LgdBorderChk; catch, end
                 try app.GridLineChk.Value = s.GridLineChk; catch, end
-                try app.LgdVisibleChk.Value = s.LgdVisibleChk; app.LgdColsEdit.Value = s.LgdColsEdit; catch, end 
+                try app.LgdVisibleChk.Value = s.LgdVisibleChk; app.LgdColsEdit.Value = s.LgdColsEdit; catch, end
                 try app.IntervalEdit.Value = s.IntervalEdit; app.WidthEdit.Value = s.WidthEdit; catch, end
                 try app.HeightEdit.Value = s.HeightEdit; app.DPIEdit.Value = s.DPIEdit; catch, end
                 try app.XLabelEdit.Value = s.XLabelEdit; app.YLabelEdit.Value = s.YLabelEdit; catch, end
@@ -932,22 +953,40 @@ classdef AxioCurve < matlab.apps.AppBase
                     end
                 catch
                 end
+                try
+                    app.loadRememberedFolder(s, 'LastCsvImportDir');
+                    app.loadRememberedFolder(s, 'LastPlotExportDir');
+                    app.loadRememberedFolder(s, 'LastPngSequenceDir');
+                    app.loadRememberedFolder(s, 'LastOutImportDir');
+                    app.loadRememberedFolder(s, 'LastOutExportDir');
+                catch
+                end
             app.syncAxisStyleEnable();
             app.UpdateAxesSize();
         end
 
+        function loadRememberedFolder(app, settings, propertyName)
+            if isfield(settings, propertyName)
+                folder = settings.(propertyName);
+                if isstring(folder), folder = char(folder); end
+                if ischar(folder)
+                    app.(propertyName) = folder;
+                end
+            end
+        end
+
         function AppCloseRequest(app, varargin), app.IsPlaying = false; drawnow limitrate; app.saveSettings(); delete(app.UIFigure); end
-        
+
         function UpdateAxesSize(app, varargin)
             if ~isvalid(app) || ~isvalid(app.AxesWrapper) || ~isvalid(app.UIAxes) || ~isvalid(app.PlotArea), return; end
             w = app.WidthEdit.Value; h = app.HeightEdit.Value;
             pw = app.AxesWrapper.Position(3); ph = app.AxesWrapper.Position(4);
             if isnan(pw) || pw <= 0, pw = 800; end; if isnan(ph) || ph <= 0, ph = 500; end
-            
-            ax_x = max(10, (pw - w)/2); 
+
+            ax_x = max(10, (pw - w)/2);
             ax_y = max(10, (ph - h)/2);
             app.PlotArea.Position = [ax_x, ax_y, w, h];
-            
+
             app.UpdateRealTimeSettings();
         end
 
@@ -956,13 +995,13 @@ classdef AxioCurve < matlab.apps.AppBase
             if size(tData, 2) < 4, tData(:, 4) = {false}; app.DataTable.Data = tData; end
             isX = cell2mat(tData(:, 2)); isYLeft = cell2mat(tData(:, 3)); isYRight = cell2mat(tData(:, 4));
             x_idx = find(isX, 1); y_left_idxs = find(isYLeft)'; y_right_idxs = find(isYRight)';
-            
+
             if isempty(x_idx) || (isempty(y_left_idxs) && isempty(y_right_idxs))
                 cla(app.UIAxes); legend(app.UIAxes, 'off'); app.H_Lines = []; app.H_LinesLeft = []; app.H_LinesRight = [];
                 app.X_Data_Plot = []; app.Y_Data_Plot = []; app.Y_Left_Data_Plot = []; app.Y_Right_Data_Plot = [];
                 app.UpdateRealTimeSettings(); return;
             end
-            
+
             app.X_Data_Plot = app.RawData(:, x_idx);
             y_left_idxs = app.sortColumnsByHeaderNumber(y_left_idxs);
             y_right_idxs = app.sortColumnsByHeaderNumber(y_right_idxs);
@@ -971,13 +1010,13 @@ classdef AxioCurve < matlab.apps.AppBase
             app.Y_Data_Plot = [app.Y_Left_Data_Plot, app.Y_Right_Data_Plot];
             app.LegendLabelsLeft = tData(y_left_idxs, 1);
             app.LegendLabelsRight = tData(y_right_idxs, 1);
-            app.LegendLabels = [app.LegendLabelsLeft; app.LegendLabelsRight]; 
+            app.LegendLabels = [app.LegendLabelsLeft; app.LegendLabelsRight];
             app.HasRightAxis = ~isempty(app.Y_Right_Data_Plot);
-            
-            x_min = min(app.X_Data_Plot); x_max = max(app.X_Data_Plot); 
+
+            x_min = min(app.X_Data_Plot); x_max = max(app.X_Data_Plot);
             if x_max <= x_min, x_max = x_min + 1; end
             if ~isempty(app.Y_Left_Data_Plot)
-                y_min = min(app.Y_Left_Data_Plot(:)); if y_min > 0, y_min = 0; end 
+                y_min = min(app.Y_Left_Data_Plot(:)); if y_min > 0, y_min = 0; end
                 y_max = max(app.Y_Left_Data_Plot(:)); if y_max <= y_min, y_max = y_min + 1; end
             else
                 y_min = 0; y_max = 1;
@@ -988,11 +1027,11 @@ classdef AxioCurve < matlab.apps.AppBase
             else
                 yr_min = 0; yr_max = 1;
             end
-            
+
             if app.XMinEdit.Value == 0 && app.XMaxEdit.Value == 0
                 app.XMinEdit.Value = x_min; app.XMaxEdit.Value = x_max;
             end
-            
+
             if app.YMinEdit.Value == 0 && app.YMaxEdit.Value == 0
                 app.YMinEdit.Value = y_min; app.YMaxEdit.Value = y_max;
             end
@@ -1000,7 +1039,7 @@ classdef AxioCurve < matlab.apps.AppBase
             if app.YRightMinEdit.Value == 0 && app.YRightMaxEdit.Value == 0
                 app.YRightMinEdit.Value = yr_min; app.YRightMaxEdit.Value = yr_max;
             end
-            
+
             app.PlotStaticFull();
         end
 
@@ -1012,8 +1051,8 @@ classdef AxioCurve < matlab.apps.AppBase
             selected_raw = app.Headers(idxs);
             numeric_vals = zeros(1, length(idxs));
             for i = 1:length(idxs)
-                num_str = regexp(selected_raw{i}, '\d+', 'match'); 
-                if ~isempty(num_str), numeric_vals(i) = str2double(num_str{1}); 
+                num_str = regexp(selected_raw{i}, '\d+', 'match');
+                if ~isempty(num_str), numeric_vals(i) = str2double(num_str{1});
                 else, numeric_vals(i) = inf; end
             end
             [~, sort_idx] = sort(numeric_vals);
@@ -1037,7 +1076,7 @@ classdef AxioCurve < matlab.apps.AppBase
             num_lines = num_left + num_right;
             if num_lines == 0, return; end
             colors = app.getColorMap(app.ColorDrop.Value, num_lines);
-            
+
             app.H_LinesLeft = gobjects(1, num_left);
             app.H_LinesRight = gobjects(1, num_right);
             lw = app.LineWidthEdit.Value;
@@ -1052,7 +1091,7 @@ classdef AxioCurve < matlab.apps.AppBase
             end
             app.H_Lines = [app.H_LinesLeft, app.H_LinesRight];
             app.applyLineAppearance(app.H_Lines, colors, lw, 1);
-            
+
             app.UpdateRealTimeSettings();
             if preserveLegend
                 app.restoreLegendState(ax, legendState);
@@ -1069,9 +1108,9 @@ classdef AxioCurve < matlab.apps.AppBase
                     ax_target.XScale = 'linear';
                     if tickSpace > 0 && ((max(xlim(ax_target)) - min(xlim(ax_target))) / tickSpace < 200)
                         ax_target.XTick = min(xlim(ax_target)) : tickSpace : max(xlim(ax_target));
-                    else, ax_target.XTickMode = 'auto'; 
+                    else, ax_target.XTickMode = 'auto';
                     end
-                    ax_target.XTickLabelMode = 'auto'; 
+                    ax_target.XTickLabelMode = 'auto';
                     if strcmp(formatType, '常规小数'), ax_target.XAxis.Exponent = 0; xtickformat(ax_target, ['%.', num2str(decPlaces), 'f']);
                     elseif strcmp(formatType, '常规整数'), ax_target.XAxis.Exponent = 0; xtickformat(ax_target, '%.0f');
                     elseif strcmp(formatType, '科学计数')
@@ -1093,7 +1132,7 @@ classdef AxioCurve < matlab.apps.AppBase
                     ax_target.YScale = 'linear';
                     if tickSpace > 0 && ((max(ylim(ax_target)) - min(ylim(ax_target))) / tickSpace < 200)
                         ax_target.YTick = min(ylim(ax_target)) : tickSpace : max(ylim(ax_target));
-                    else, ax_target.YTickMode = 'auto'; 
+                    else, ax_target.YTickMode = 'auto';
                     end
                     ax_target.YTickLabelMode = 'auto';
                     if strcmp(formatType, '常规小数'), app.setYAxisExponentZero(ax_target); ytickformat(ax_target, ['%.', num2str(decPlaces), 'f']);
@@ -1120,30 +1159,30 @@ classdef AxioCurve < matlab.apps.AppBase
             ax = app.UIAxes;
             app.HasRightAxis = ~isempty(app.Y_Right_Data_Plot);
             app.updateRightAxisControls();
-            
+
             yyaxis(ax, 'left');
             ax.FontName = app.FontDrop.Value; ax.FontSize = app.FontSizeEdit.Value;
             ax.LineWidth = app.AxisWidthEdit.Value; ax.FontWeight = fastif(app.FontBoldChk.Value, 'bold', 'normal');
             ax.Box = 'off';
             ax.XAxisLocation = 'bottom';
-            ax.TickDir = fastif(app.TickOutChk.Value, 'out', 'in'); 
+            ax.TickDir = fastif(app.TickOutChk.Value, 'out', 'in');
             app.applyAxisTextStyle(ax, 'X', 1);
             app.applyAxisTextStyle(ax, 'YLeft', 1);
-            
+
             grid_state = fastif(app.GridLineChk.Value, 'on', 'off');
             ax.XGrid = grid_state; ax.YGrid = grid_state;
-            ax.Color = 'w'; 
-            
+            ax.Color = 'w';
+
             ax.XLabel.String = app.XLabelEdit.Value; ax.YLabel.String = app.YLabelEdit.Value;
-            ax.TickLabelInterpreter = 'tex'; 
-            
+            ax.TickLabelInterpreter = 'tex';
+
             x_min = app.XMinEdit.Value; x_max = app.XMaxEdit.Value;
             if x_max > x_min
                 if strcmp(app.XFormatDrop.Value, 'Log坐标'), xlim(ax, [max(1e-12, x_min), max(1e-11, x_max)]);
                 else, xlim(ax, [x_min, x_max]); end
             end
             app.applyAxisFormatting(ax, 'X', app.XFormatDrop.Value, round(max(app.XDecEdit.Value, 0)), app.XTickSpaceEdit.Value);
-            
+
             yyaxis(ax, 'left');
             y_min = app.YMinEdit.Value; y_max = app.YMaxEdit.Value;
             if y_max > y_min
@@ -1176,16 +1215,16 @@ classdef AxioCurve < matlab.apps.AppBase
             ax.Box = 'off';
             app.applyAxisTextStyle(ax, 'X', 1);
             app.applyAxisTextStyle(ax, 'YLeft', 1);
-            
+
             num_lines = length(app.H_Lines);
             if num_lines > 0
                 colors = app.getColorMap(app.ColorDrop.Value, num_lines);
                 lw = app.LineWidthEdit.Value;
                 app.applyLineAppearance(app.H_Lines, colors, lw, 1);
             end
-            
+
             app.drawFrameBorder(ax, 1);
-            
+
             if app.LgdVisibleChk.Value && num_lines > 0
                 if isempty(ax.Legend)
                     padded_labels = cell(1, num_lines);
@@ -1194,30 +1233,30 @@ classdef AxioCurve < matlab.apps.AppBase
                     lgd.ItemTokenSize = [15, 18];
                 end
                 if ~isempty(ax.Legend)
-                    lgd = ax.Legend; 
+                    lgd = ax.Legend;
                     lgd.NumColumns = max(1, round(app.LgdColsEdit.Value));
                     lgd.FontName = app.FontDrop.Value; lgd.FontSize = app.LgdFontEdit.Value;
                     lgd.FontWeight = fastif(app.FontBoldChk.Value, 'bold', 'normal');
-                    
+
                     app.applyLegendBoxStyle(lgd);
-                    
+
                     lgd.Visible = 'on';
                 end
             else
                 legend(ax, 'off');
             end
-            
-            drawnow; 
-            ti = ax.TightInset; 
-            
+
+            drawnow;
+            ti = ax.TightInset;
+
             margin = 20;
-            left = ti(1) + margin; 
+            left = ti(1) + margin;
             bottom = ti(2) + margin;
-            ax_w = max(10, w - ti(1) - ti(3) - margin * 2); 
+            ax_w = max(10, w - ti(1) - ti(3) - margin * 2);
             ax_h = max(10, h - ti(2) - ti(4) - margin * 2);
-            
+
             ax.Position = [left, bottom, ax_w, ax_h];
-            
+
             if app.LgdVisibleChk.Value && num_lines > 0 && ~isempty(ax.Legend)
                 app.UpdateLegendPosOnly(app.LgdXSlider.Value, app.LgdYSlider.Value);
             end
@@ -1240,6 +1279,162 @@ classdef AxioCurve < matlab.apps.AppBase
                 end
                 app.ProgressText.Text = textValue;
                 drawnow limitrate;
+            catch
+            end
+        end
+
+        function folder = getDialogStartFolder(~, rememberedFolder)
+            try
+                if isstring(rememberedFolder), rememberedFolder = char(rememberedFolder); end
+                if ischar(rememberedFolder) && ~isempty(rememberedFolder) && isfolder(rememberedFolder)
+                    folder = rememberedFolder;
+                    return;
+                end
+                currentFolder = pwd;
+                if isfolder(currentFolder)
+                    folder = currentFolder;
+                    return;
+                end
+                userProfile = getenv('USERPROFILE');
+                documentsFolder = fullfile(userProfile, 'Documents');
+                if isfolder(documentsFolder)
+                    folder = documentsFolder;
+                    return;
+                end
+            catch
+            end
+            folder = tempdir;
+        end
+
+        function rememberDialogFolder(app, propertyName, folder)
+            try
+                if isstring(folder), folder = char(folder); end
+                if ischar(folder) && isfolder(folder)
+                    app.(propertyName) = folder;
+                    app.saveSettings();
+                end
+            catch
+            end
+        end
+
+        function setConvertProgress(app, pct, textValue)
+            try
+                pct = max(0, min(100, pct));
+                bgPos = app.ConvertProgressBg.Position;
+                app.ConvertProgressFill.Position = [0, 0, max(0, bgPos(3) * pct / 100), max(1, bgPos(4))];
+                app.ConvertProgressText.Position = [0, 0, max(1, bgPos(3)), max(1, bgPos(4))];
+                app.ConvertProgressText.Text = textValue;
+                drawnow limitrate;
+            catch
+            end
+        end
+
+        function setConvertLog(app, textValue)
+            try
+                if ischar(textValue) || isstring(textValue)
+                    app.ConvertStatusLabel.Value = cellstr(textValue);
+                else
+                    app.ConvertStatusLabel.Value = textValue;
+                end
+                drawnow limitrate;
+            catch
+            end
+        end
+
+        function appendConvertLog(app, textValue)
+            try
+                currentLines = app.ConvertStatusLabel.Value;
+                if ischar(currentLines) || isstring(currentLines)
+                    currentLines = cellstr(currentLines);
+                end
+                newLines = cellstr(textValue);
+                app.ConvertStatusLabel.Value = [currentLines(:); newLines(:)];
+                drawnow limitrate;
+            catch
+            end
+        end
+
+        function SelectOutFilesPushed(app, varargin)
+            startDir = app.getDialogStartFolder(app.LastOutImportDir);
+            [files, path] = uigetfile({'*.out', 'Fluent OUT 文件 (*.out)'}, ...
+                '选择要转换的 Fluent .out 文件', startDir, 'MultiSelect', 'on');
+            app.restoreMainWindow();
+            if isequal(files, 0), return; end
+
+            if ischar(files) || isstring(files)
+                files = {char(files)};
+            end
+            app.SelectedOutFiles = cellfun(@(file) fullfile(path, file), files, 'UniformOutput', false);
+            app.rememberDialogFolder('LastOutImportDir', path);
+            logLines = cell(numel(app.SelectedOutFiles), 1);
+            for idx = 1:numel(app.SelectedOutFiles)
+                [~, name, ext] = fileparts(app.SelectedOutFiles{idx});
+                logLines{idx} = sprintf('已选择“%s%s”文件。', name, ext);
+            end
+            app.setConvertLog(logLines);
+            app.setConvertProgress(0, '等待转换...');
+        end
+
+        function ConvertOutFilesPushed(app, varargin)
+            if isempty(app.SelectedOutFiles)
+                uialert(app.UIFigure, '请先选择需要转换的 .out 文件。', '提示');
+                app.restoreMainWindow();
+                return;
+            end
+
+            startDir = app.getDialogStartFolder(app.LastOutExportDir);
+            outputDir = uigetdir(startDir, '选择 CSV 保存文件夹');
+            app.restoreMainWindow();
+            if isequal(outputDir, 0), return; end
+            app.rememberDialogFolder('LastOutExportDir', outputDir);
+
+            app.SelectOutBtn.Enable = 'off';
+            app.ConvertOutBtn.Enable = 'off';
+            cleanupButtons = onCleanup(@() app.restoreConvertButtons());
+            totalFiles = numel(app.SelectedOutFiles);
+            successCount = 0;
+            failedFiles = {};
+            app.setConvertProgress(0, '转换进度: 0%');
+            app.setConvertLog(sprintf('输出文件夹：“%s”。', outputDir));
+
+            for idx = 1:totalFiles
+                sourceFile = app.SelectedOutFiles{idx};
+                [~, sourceName] = fileparts(sourceFile);
+                outputFile = fullfile(outputDir, [sourceName '.csv']);
+                [~, sourceBase, sourceExt] = fileparts(sourceFile);
+                [~, outputBase, outputExt] = fileparts(outputFile);
+                try
+                    outputFile = fluentOutToCsv(sourceFile, outputDir);
+                    successCount = successCount + 1;
+                    [~, outputBase, outputExt] = fileparts(outputFile);
+                    app.appendConvertLog(sprintf('成功：“%s%s”转化为“%s%s”。', sourceBase, sourceExt, outputBase, outputExt));
+                catch ME
+                    failedFiles{end + 1} = sprintf('%s: %s', sourceFile, ME.message); %#ok<AGROW>
+                    app.appendConvertLog(sprintf('失败：“%s%s”未能转化为“%s%s”。原因：%s', sourceBase, sourceExt, outputBase, outputExt, ME.message));
+                    try app.writeErrorLog(ME, ['转换OUT文件: ' sourceFile]); catch, end
+                end
+                pct = idx / totalFiles * 100;
+                app.setConvertProgress(pct, sprintf('转换进度: %.0f%% (%d/%d)', pct, idx, totalFiles));
+            end
+
+            if isempty(failedFiles)
+                message = sprintf('转换完成：成功 %d 个，失败 0 个。', successCount);
+                app.appendConvertLog(message);
+                app.setConvertProgress(100, message);
+                uialert(app.UIFigure, message, '转换完成', 'Icon', 'success');
+            else
+                message = sprintf('转换完成：成功 %d 个，失败 %d 个。详情已写入错误日志。', successCount, numel(failedFiles));
+                app.appendConvertLog(message);
+                app.setConvertProgress(100, message);
+                uialert(app.UIFigure, strjoin([{message}; failedFiles(:)], newline), '转换完成但有错误', 'Icon', 'warning');
+            end
+            app.restoreMainWindow();
+        end
+
+        function restoreConvertButtons(app)
+            try
+                app.SelectOutBtn.Enable = 'on';
+                app.ConvertOutBtn.Enable = 'on';
             catch
             end
         end
@@ -1268,7 +1463,7 @@ classdef AxioCurve < matlab.apps.AppBase
             % 获取真实的屏幕 DPI 作为基准
             screen_dpi = get(groot, 'ScreenPixelsPerInch');
             if isempty(screen_dpi) || screen_dpi <= 0, screen_dpi = 96; end
-            
+
             % 用户期望的高清 DPI
             dpi_val = round(max(72, app.DPIEdit.Value));
             % 计算物理缩放倍率
@@ -1281,47 +1476,47 @@ classdef AxioCurve < matlab.apps.AppBase
             fig = figure('Visible', 'off', 'Position', [100 100 w_scaled h_scaled], 'Color', 'w', 'ToolBar', 'none', 'MenuBar', 'none');
             ax = axes(fig, 'Units', 'pixels');
             yyaxis(ax, 'left'); hold(ax, 'on');
-            
+
             num_left = size(app.Y_Left_Data_Plot, 2);
             num_right = size(app.Y_Right_Data_Plot, 2);
             num_lines = num_left + num_right;
             colors = app.getColorMap(app.ColorDrop.Value, num_lines);
-            
-            lines = gobjects(1, num_lines); 
+
+            lines = gobjects(1, num_lines);
             lw = app.LineWidthEdit.Value * scale; % 缩放：线条宽度
             yyaxis(ax, 'left');
             for i = 1:num_left
-                lines(i) = plot(ax, app.X_Data_Plot, app.Y_Left_Data_Plot(:, i), 'LineWidth', lw, 'Color', colors(i,:)); 
+                lines(i) = plot(ax, app.X_Data_Plot, app.Y_Left_Data_Plot(:, i), 'LineWidth', lw, 'Color', colors(i,:));
             end
             yyaxis(ax, 'right'); hold(ax, 'on');
             for i = 1:num_right
-                lines(num_left + i) = plot(ax, app.X_Data_Plot, app.Y_Right_Data_Plot(:, i), 'LineWidth', lw, 'Color', colors(num_left + i,:)); 
+                lines(num_left + i) = plot(ax, app.X_Data_Plot, app.Y_Right_Data_Plot(:, i), 'LineWidth', lw, 'Color', colors(num_left + i,:));
             end
             app.applyLineAppearance(lines, colors, lw, scale);
-            
+
             yyaxis(ax, 'left');
-            ax.FontName = app.FontDrop.Value; 
+            ax.FontName = app.FontDrop.Value;
             ax.FontSize = app.FontSizeEdit.Value * scale; % 缩放：坐标轴字号
             ax.LineWidth = app.AxisWidthEdit.Value * scale; % 缩放：坐标轴外框粗细
             ax.FontWeight = fastif(app.FontBoldChk.Value, 'bold', 'normal');
-            ax.Box = 'off'; 
+            ax.Box = 'off';
             ax.XAxisLocation = 'bottom';
-            ax.TickDir = fastif(app.TickOutChk.Value, 'out', 'in'); 
+            ax.TickDir = fastif(app.TickOutChk.Value, 'out', 'in');
             app.applyAxisTextStyle(ax, 'X', scale);
             app.applyAxisTextStyle(ax, 'YLeft', scale);
-            
+
             grid_state = fastif(app.GridLineChk.Value, 'on', 'off');
             ax.XGrid = grid_state; ax.YGrid = grid_state;
             ax.Color = 'w';
             ax.XLabel.String = app.XLabelEdit.Value; ax.YLabel.String = app.YLabelEdit.Value;
             ax.TickLabelInterpreter = 'tex';
-            
+
             if app.XMaxEdit.Value > app.XMinEdit.Value
                 if strcmp(app.XFormatDrop.Value, 'Log坐标'), xlim(ax, [max(1e-12, app.XMinEdit.Value), max(1e-11, app.XMaxEdit.Value)]);
                 else, xlim(ax, [app.XMinEdit.Value, app.XMaxEdit.Value]); end
             end
             app.applyAxisFormatting(ax, 'X', app.XFormatDrop.Value, round(max(0, app.XDecEdit.Value)), app.XTickSpaceEdit.Value);
-            
+
             yyaxis(ax, 'left');
             if app.YMaxEdit.Value > app.YMinEdit.Value
                 if strcmp(app.YFormatDrop.Value, 'Log坐标'), ylim(ax, [max(1e-12, app.YMinEdit.Value), max(1e-11, app.YMaxEdit.Value)]);
@@ -1354,38 +1549,38 @@ classdef AxioCurve < matlab.apps.AppBase
             ax.Box = 'off';
             app.applyAxisTextStyle(ax, 'X', scale);
             app.applyAxisTextStyle(ax, 'YLeft', scale);
-            
+
             app.drawFrameBorder(ax, scale);
-            
+
             % --- 渲染图例，同步进行物理缩放 ---
             if app.LgdVisibleChk.Value && num_lines > 0
-                padded_labels = cell(1, num_lines); 
+                padded_labels = cell(1, num_lines);
                 for i = 1:num_lines, padded_labels{i} = [char(app.LegendLabels{i}), '    ']; end
                 lgd = legend(ax, lines, padded_labels, 'Location', 'northwest', 'NumColumns', max(1, round(app.LgdColsEdit.Value)));
-                lgd.FontName = app.FontDrop.Value; 
+                lgd.FontName = app.FontDrop.Value;
                 lgd.FontSize = app.LgdFontEdit.Value * scale; % 缩放：图例字号
                 lgd.FontWeight = fastif(app.FontBoldChk.Value, 'bold', 'normal');
-                
+
                 app.applyLegendBoxStyle(lgd);
-                
+
                 % 缩放：图例内部的线条标记长度 (这就是之前比例失调的元凶之一)
-                lgd.ItemTokenSize = [15 * scale, 18 * scale]; 
+                lgd.ItemTokenSize = [15 * scale, 18 * scale];
             else
                 legend(ax, 'off');
             end
-            
-            drawnow; 
-            ti = ax.TightInset; 
-            
+
+            drawnow;
+            ti = ax.TightInset;
+
             margin = 20 * scale; % 缩放：排版边距
-            left = ti(1) + margin; 
+            left = ti(1) + margin;
             bottom = ti(2) + margin;
-            ax_w = max(10, w_scaled - ti(1) - ti(3) - margin * 2); 
+            ax_w = max(10, w_scaled - ti(1) - ti(3) - margin * 2);
             ax_h = max(10, h_scaled - ti(2) - ti(4) - margin * 2);
             ax.Position = [left, bottom, ax_w, ax_h];
-            
-            drawnow; 
-            
+
+            drawnow;
+
             yyaxis(ax, 'left');
             ax.XLimMode = 'manual';
             ax.YLimMode = 'manual';
@@ -1400,19 +1595,19 @@ classdef AxioCurve < matlab.apps.AppBase
                 ax.YTickLabelMode = 'manual';
                 yyaxis(ax, 'left');
             end
-            
+
             if app.LgdVisibleChk.Value && num_lines > 0
                 % 使用像素绝对坐标进行无损锁定
                 ax.Units = 'pixels';
                 ax_pos = ax.Position;
-                
+
                 lgd.Units = 'pixels';
                 lgd_pos = lgd.Position;
-                
+
                 nx = ax_pos(1) + app.LgdXSlider.Value * max(0.001, ax_pos(3) - lgd_pos(3));
                 ny = ax_pos(2) + app.LgdYSlider.Value * max(0.001, ax_pos(4) - lgd_pos(4));
-                
-                lgd.Location = 'none'; 
+
+                lgd.Location = 'none';
                 lgd.Position(1:2) = [nx, ny];
                 % 这里不要加 AutoUpdate = 'off'，让其自然定型
             end
@@ -1421,53 +1616,59 @@ classdef AxioCurve < matlab.apps.AppBase
         function ExportBtnPushed(app, varargin)
             if isempty(app.H_Lines), uialert(app.UIFigure, '请先在左侧勾选需要导出的曲线！', '提示'); app.restoreMainWindow(); return; end
             w = app.WidthEdit.Value; h = app.HeightEdit.Value;
-            dpi_val = round(max(72, app.DPIEdit.Value)); 
+            dpi_val = round(max(72, app.DPIEdit.Value));
             delay = 0.1; interval = max(1, round(app.IntervalEdit.Value));
             formatValue = app.ExportFormatDrop.Value;
             isGIF = strcmp(formatValue, 'GIF'); isMP4 = strcmp(formatValue, 'MP4');
             isPNGRadio = strcmp(formatValue, 'PNGS');
             isStaticPNG = strcmp(formatValue, 'PNG'); isStaticJPG = strcmp(formatValue, 'JPG'); isStaticTIF = strcmp(formatValue, 'TIF');
             isStatic = isStaticPNG || isStaticJPG || isStaticTIF;
-            
-            if isGIF, [file, path] = uiputfile('*.gif', '保存 GIF 动画');
-            elseif isMP4, [file, path] = uiputfile('*.mp4', '保存 MP4 动画');
-            elseif isStaticPNG, [file, path] = uiputfile('*.png', '保存单张 PNG');
-            elseif isStaticJPG, [file, path] = uiputfile('*.jpg', '保存单张 JPG');
-            elseif isStaticTIF, [file, path] = uiputfile('*.tif', '保存单张 TIF');
+
+            exportDir = app.getDialogStartFolder(app.LastPlotExportDir);
+            if isGIF, [file, path] = uiputfile('*.gif', '保存 GIF 动画', fullfile(exportDir, 'AxioCurve.gif'));
+            elseif isMP4, [file, path] = uiputfile('*.mp4', '保存 MP4 动画', fullfile(exportDir, 'AxioCurve.mp4'));
+            elseif isStaticPNG, [file, path] = uiputfile('*.png', '保存单张 PNG', fullfile(exportDir, 'AxioCurve.png'));
+            elseif isStaticJPG, [file, path] = uiputfile('*.jpg', '保存单张 JPG', fullfile(exportDir, 'AxioCurve.jpg'));
+            elseif isStaticTIF, [file, path] = uiputfile('*.tif', '保存单张 TIF', fullfile(exportDir, 'AxioCurve.tif'));
             else
-                folder = uigetdir('', '选择 PNG 序列保存文件夹');
+                folder = uigetdir(app.getDialogStartFolder(app.LastPngSequenceDir), '选择 PNG 序列保存文件夹');
                 file = ''; path = folder;
             end
             app.restoreMainWindow();
-            
+
             if isequal(file, 0) || isequal(path, 0), return; end
+            if isPNGRadio
+                app.rememberDialogFolder('LastPngSequenceDir', path);
+            else
+                app.rememberDialogFolder('LastPlotExportDir', path);
+            end
             if isPNGRadio, f_path = path; else, f_path = fullfile(path, file); end
-            
+
             [hiddenFig, ~, lines_hidden] = app.CreateHiddenRenderAxes(w, h);
             num_points = size(app.Y_Data_Plot, 1); num_lines = length(lines_hidden);
-            
-            app.ExportBtn.Text = '导出中...'; app.ExportBtn.Enable = 'off'; 
+
+            app.ExportBtn.Text = '导出中...'; app.ExportBtn.Enable = 'off';
             app.setProgress(0, '0%'); drawnow;
-            
+
             % --- 无损原生截取设定 ---
             % 既然前面的画布已经按物理尺寸放大了，这里就必须使用屏幕原生 DPI 进行 1:1 截屏输出
             % 这样彻底阻断 MATLAB 擅自在 print 时进行二次缩放打乱图例排版！
             screen_dpi = get(groot, 'ScreenPixelsPerInch');
             if isempty(screen_dpi) || screen_dpi <= 0, screen_dpi = 96; end
             print_res_str = sprintf('-r%d', screen_dpi);
-            
+
             hiddenFig.PaperPositionMode = 'auto';
             hiddenFig.InvertHardcopy = 'off';
-            
+
             try
                 % 预热渲染引擎
                 try print(hiddenFig, '-RGBImage', print_res_str); catch, end
-                
+
                 if isStatic
                     for i = 1:num_lines, set(lines_hidden(i), 'XData', app.X_Data_Plot, 'YData', app.Y_Data_Plot(:, i)); end
                     app.applySparseMarkerIndices(lines_hidden);
                     drawnow; app.setProgress(100, '导出进度: 100%'); drawnow;
-                    
+
                     if isStaticPNG
                         print(hiddenFig, f_path, '-dpng', print_res_str);
                     elseif isStaticJPG
@@ -1475,22 +1676,22 @@ classdef AxioCurve < matlab.apps.AppBase
                     elseif isStaticTIF
                         print(hiddenFig, f_path, '-dtiff', print_res_str);
                     end
-                    
+
                     close(hiddenFig); app.ExportBtn.Text = '导出选定格式'; app.ExportBtn.Enable = 'on'; app.ProgressText.Text = '导出完成!'; uialert(app.UIFigure, sprintf('高清静态图片(DPI: %d)导出成功！', dpi_val), '完成'); app.restoreMainWindow(); return;
                 end
-                
+
                 if isMP4, v = VideoWriter(f_path, 'MPEG-4'); v.FrameRate = max(1, round(1 / delay)); v.Quality = 100; open(v); end
                 frame_list = 1:interval:num_points; if frame_list(end) ~= num_points, frame_list(end+1) = num_points; end
                 total_frames = length(frame_list); frame_idx = 1;
-                
+
                 for k = frame_list
                     for i = 1:num_lines, set(lines_hidden(i), 'XData', app.X_Data_Plot(1:k), 'YData', app.Y_Data_Plot(1:k, i)); end
                     app.applySparseMarkerIndices(lines_hidden);
                     drawnow;
-                    
+
                     % 动画渲染：无损物理截取，不再触发引擎二次缩放
                     im = print(hiddenFig, '-RGBImage', print_res_str);
-                    
+
                     if isPNGRadio
                         png_name = fullfile(path, sprintf('frame_%04d.png', frame_idx));
                         imwrite(im, png_name, 'png');
@@ -1503,17 +1704,17 @@ classdef AxioCurve < matlab.apps.AppBase
                             writeVideo(v, im);
                         end
                     end
-                    
+
                     pct = (frame_idx / total_frames) * 100; app.setProgress(pct, sprintf('导出进度: %.1f%%', pct)); drawnow;
                     frame_idx = frame_idx + 1;
                 end
-                
+
                 if isMP4, close(v); end
-                close(hiddenFig); 
-                app.ExportBtn.Text = '导出选定格式'; app.ExportBtn.Enable = 'on'; app.ProgressText.Text = '导出完成!'; 
+                close(hiddenFig);
+                app.ExportBtn.Text = '导出选定格式'; app.ExportBtn.Enable = 'on'; app.ProgressText.Text = '导出完成!';
                 uialert(app.UIFigure, '动画导出成功！', '完成');
                 app.restoreMainWindow();
-                
+
             catch ME
                 if exist('v', 'var') && isMP4, close(v); end
                 if exist('hiddenFig', 'var') && isvalid(hiddenFig), close(hiddenFig); end
@@ -1529,12 +1730,12 @@ classdef AxioCurve < matlab.apps.AppBase
         function createComponents(app)
             app.UIFigure = uifigure('Name', 'AxioCurve (Scientific Curve Animator)', 'Position', [50, 50, 1350, 780]);
             app.UIFigure.CloseRequestFcn = @(src, event) app.safeRun(@() app.AppCloseRequest(src, event), '关闭程序');
-            
+
             app.GridLayout = uigridlayout(app.UIFigure, [2 3]);
             app.GridLayout.RowHeight = {'1x', 24};
-            app.GridLayout.ColumnWidth = {300, 450, '1x'}; 
+            app.GridLayout.ColumnWidth = {300, 450, '1x'};
             app.GridLayout.Padding = [4 4 4 4];
-            
+
             %% --- 左侧面板 ---
             app.LeftPanel = uipanel(app.GridLayout);
             app.LeftPanel.Layout.Row = 1;
@@ -1542,30 +1743,30 @@ classdef AxioCurve < matlab.apps.AppBase
             leftGrid = uigridlayout(app.LeftPanel, [4 1]);
             leftGrid.RowHeight = {30, 30, 20, '1x'};
             leftGrid.Padding = [5, 5, 5, 5];
-            
+
             app.FindReplacePanel = uipanel(leftGrid, 'BorderType', 'none');
             frLayout = uigridlayout(app.FindReplacePanel, [1 5]);
-            frLayout.RowHeight = {'1x'}; 
-            frLayout.ColumnWidth = {30, '2x', 30, '2x', 55}; 
+            frLayout.RowHeight = {'1x'};
+            frLayout.ColumnWidth = {30, '2x', 30, '2x', 55};
             frLayout.Padding = [0 0 0 0];
-            
+
             uilabel(frLayout, 'Text', '查找'); app.FindEdit = uieditfield(frLayout, 'text');
             uilabel(frLayout, 'Text', '替换'); app.ReplaceEdit = uieditfield(frLayout, 'text');
             app.ReplaceBtn = uibutton(frLayout, 'push', 'Text', '执行'); app.ReplaceBtn.ButtonPushedFcn = @(src, event) app.safeRun(@() app.ReplaceBtnPushed(src, event), '替换曲线名称');
-            
-            btnGrid = uigridlayout(leftGrid, [1 2]); 
+
+            btnGrid = uigridlayout(leftGrid, [1 2]);
             btnGrid.Padding = [0 0 0 0];
             app.SelectAllYBtn = uibutton(btnGrid, 'push', 'Text', '全选左Y'); app.SelectAllYBtn.ButtonPushedFcn = @(src, event) app.safeRun(@() app.SelectAllYPushed(src, event), '全选左Y');
             app.ClearYBtn = uibutton(btnGrid, 'push', 'Text', '全部清空'); app.ClearYBtn.ButtonPushedFcn = @(src, event) app.safeRun(@() app.ClearYPushed(src, event), '清空Y选择');
-            
+
             uilabel(leftGrid, 'Text', '数据列表', 'FontWeight', 'bold', 'FontColor', [0.3 0.3 0.3]);
             app.DataTable = uitable(leftGrid);
             app.DataTable.ColumnName = {'Name', 'X', 'Y左', 'Y右'};
             app.DataTable.ColumnFormat = {'char', 'logical', 'logical', 'logical'};
             app.DataTable.ColumnEditable = [true, true, true, true];
-            app.DataTable.ColumnWidth = {150, 40, 45, 45}; 
+            app.DataTable.ColumnWidth = {150, 40, 45, 45};
             app.DataTable.CellEditCallback = @(src, event) app.safeRun(@() app.DataTableEdited(src, event), '更新数据表');
-            
+
             %% --- 中间面板 ---
             app.MiddlePanel = uipanel(app.GridLayout);
             app.MiddlePanel.Layout.Row = 1;
@@ -1576,8 +1777,8 @@ classdef AxioCurve < matlab.apps.AppBase
             app.DataTab = uitab(app.MiddleTabs, 'Title', '数据与导出');
             app.AxisTab = uitab(app.MiddleTabs, 'Title', '坐标轴与样式');
 
-            dataExportGrid = uigridlayout(app.DataTab, [4 1]);
-            dataExportGrid.RowHeight = {40, 138, 150, '1x'};
+            dataExportGrid = uigridlayout(app.DataTab, [5 1]);
+            dataExportGrid.RowHeight = {40, 138, 150, 132, '1x'};
             dataExportGrid.RowSpacing = 8;
             dataExportGrid.Padding = [8 8 8 8];
             dataGrid = uigridlayout(dataExportGrid, [1 1]);
@@ -1686,7 +1887,7 @@ classdef AxioCurve < matlab.apps.AppBase
             app.setColorButton(app.YLeftAxisColorBtn, [0 0 0]); app.setColorButton(app.YLeftTitleColorBtn, [0 0 0]);
             app.setColorButton(app.YRightAxisColorBtn, [0.15 0.15 0.15]); app.setColorButton(app.YRightTitleColorBtn, [0.15 0.15 0.15]);
 
-            app.ExportPanel = uipanel(dataExportGrid, 'BorderType', 'none'); 
+            app.ExportPanel = uipanel(dataExportGrid, 'BorderType', 'none');
             exportGrid = uigridlayout(app.ExportPanel, [4 2]);
             exportGrid.RowHeight = {30, 30, 30, 30};
             exportGrid.ColumnWidth = {72, '1x'};
@@ -1720,6 +1921,7 @@ classdef AxioCurve < matlab.apps.AppBase
             app.ProgressBg = uipanel(actionGrid, 'BackgroundColor', [0.85 0.85 0.85], 'BorderType', 'line');
             app.ProgressFill = uipanel(app.ProgressBg, 'Position', [0, 0, 0, 22], 'BackgroundColor', [0.4660 0.6740 0.1880], 'BorderType', 'none');
             app.ProgressText = uilabel(app.ProgressBg, 'Text', '等待导出...', 'Position', [0, 0, 260, 22], 'HorizontalAlignment', 'center', 'FontColor', 'k', 'FontSize', 10);
+
             uilabel(dataExportGrid, ...
                 'Text', sprintf(['操作事项\n', ...
                 '1. 先选择数据文件，再在左侧表格中勾选一个 X 列。\n', ...
@@ -1728,35 +1930,60 @@ classdef AxioCurve < matlab.apps.AppBase
                 '4. 初始化动画会清空当前曲线显示，但不会清空已加载数据。\n', ...
                 '5. 导出前建议确认宽高、DPI、动画间隔和导出格式。\n', ...
                 '6. GIF/MP4/PNG序列会按动画间隔抽帧；PNG/JPG/TIF 单图导出完整曲线。\n', ...
-                '7. 若修改字体、颜色、图例形状或双 y 轴设置，建议先静态预览再导出。']), ...
+                '7. Fluent .out 转 CSV 可批量选择 .out 文件，并在指定文件夹生成同名 CSV。\n', ...
+                '8. 软件会记住上次导入、导出和转换路径，便于连续处理多个文件。']), ...
                 'WordWrap', 'on', ...
                 'FontColor', [0.45 0.45 0.45], ...
                 'FontSize', 10, ...
                 'VerticalAlignment', 'top');
-            
+
+            app.OutConvertPanel = uipanel(dataExportGrid, 'Title', 'Fluent .out 转 CSV');
+            convertGrid = uigridlayout(app.OutConvertPanel, [3 1]);
+            convertGrid.RowHeight = {34, 24, '1x'};
+            convertGrid.RowSpacing = 8;
+            convertGrid.Padding = [8 8 8 8];
+            convertBtnGrid = uigridlayout(convertGrid, [1 2]);
+            convertBtnGrid.Padding = [0 0 0 0];
+            convertBtnGrid.ColumnSpacing = 8;
+            app.SelectOutBtn = uibutton(convertBtnGrid, 'push', 'Text', '1 选择要转换的文件');
+            app.SelectOutBtn.ButtonPushedFcn = @(src, event) app.safeRun(@() app.SelectOutFilesPushed(src, event), '选择OUT文件');
+            app.ConvertOutBtn = uibutton(convertBtnGrid, 'push', 'Text', '2 选择保存路径及格式转换');
+            app.ConvertOutBtn.ButtonPushedFcn = @(src, event) app.safeRun(@() app.ConvertOutFilesPushed(src, event), '转换OUT文件');
+            app.ConvertProgressBg = uipanel(convertGrid, 'BackgroundColor', [0.95 0.95 0.95], 'BorderType', 'line');
+            app.ConvertProgressFill = uipanel(app.ConvertProgressBg, 'Position', [0, 0, 0, 22], ...
+                'BackgroundColor', [1.0 0.72 0.35], 'BorderType', 'none');
+            app.ConvertProgressText = uilabel(app.ConvertProgressBg, 'Text', '等待转换...', ...
+                'Position', [0, 0, 260, 22], 'HorizontalAlignment', 'center', 'FontColor', 'k', 'FontSize', 10);
+            app.ConvertStatusLabel = uitextarea(convertGrid, ...
+                'Value', {'未选择 .out 文件'}, ...
+                'Editable', 'off', ...
+                'BackgroundColor', [1 1 1], ...
+                'FontColor', [0.15 0.15 0.15], ...
+                'FontSize', 10);
+
             %% --- 右侧面板 ---
             app.RightPanel = uipanel(app.GridLayout);
             app.RightPanel.Layout.Row = 1;
             app.RightPanel.Layout.Column = 3;
             rightLayout = uigridlayout(app.RightPanel, [2 1]);
-            rightLayout.RowHeight = {'1x', 140}; 
+            rightLayout.RowHeight = {'1x', 140};
             rightLayout.Padding = [0 0 0 0];
-            
+
             app.AxesWrapper = uipanel(rightLayout, 'Scrollable', 'on', 'BorderType', 'none', 'BackgroundColor', [0.94 0.94 0.94], 'AutoResizeChildren', 'off');
             app.AxesWrapper.SizeChangedFcn = @(src, event) app.safeRun(@() app.UpdateAxesSize(src, event), '调整画布尺寸');
-            
+
             app.PlotArea = uipanel(app.AxesWrapper, 'Units', 'pixels', 'BorderType', 'line', 'BackgroundColor', 'w', 'HighlightColor', [0.7 0.7 0.7]);
-            
+
             app.UIAxes = axes(app.PlotArea, 'Units', 'pixels');
             app.UIAxes.Toolbar.Visible = 'off';
-            disableDefaultInteractivity(app.UIAxes); 
-            
+            disableDefaultInteractivity(app.UIAxes);
+
             % --- 底部控制面板 ---
             bottomPanel = uipanel(rightLayout, 'BorderType', 'none');
             app.BottomLayout = uigridlayout(bottomPanel, [3, 1]);
             app.BottomLayout.RowHeight = {30, 30, 40};
             app.BottomLayout.Padding = [0 0 0 0];
-            
+
             % 第一排：标题栏
             r1 = uigridlayout(app.BottomLayout, [1, 6]); r1.Layout.Row = 1;
             r1.ColumnWidth = {54, '1x', 58, '1x', 58, '1x'};
@@ -1768,34 +1995,34 @@ classdef AxioCurve < matlab.apps.AppBase
             app.YLabelEdit = uieditfield(r1, 'text', 'Value', 'Y Viscosity, Pa·s'); app.YLabelEdit.ValueChangedFcn = @(src, event) app.safeRun(@() app.UIChanged(src, event), '更新左Y标题');
             uilabel(r1, 'Text', '右Y标题');
             app.YRightLabelEdit = uieditfield(r1, 'text', 'Value', 'Right Y'); app.YRightLabelEdit.ValueChangedFcn = @(src, event) app.safeRun(@() app.UIChanged(src, event), '更新右Y标题');
-            
+
             % 第二排：弹性开关列
             r2 = uigridlayout(app.BottomLayout, [1, 8]); r2.Layout.Row = 2;
             r2.ColumnWidth = {'1x', '1x', '1.25x', '1x', '1x', '1x', 60, 42};
             r2.ColumnSpacing = 6;
             r2.Padding = [6, 0, 6, 0];
-            
+
             app.FontBoldChk = uicheckbox(r2, 'Text', '字体加粗', 'Value', false); app.FontBoldChk.ValueChangedFcn = @(src, event) app.safeRun(@() app.UIChanged(src, event), '更新字体加粗');
-            app.TickOutChk = uicheckbox(r2, 'Text', '刻度向外', 'Value', false); app.TickOutChk.ValueChangedFcn = @(src, event) app.safeRun(@() app.UIChanged(src, event), '更新刻度方向'); 
+            app.TickOutChk = uicheckbox(r2, 'Text', '刻度向外', 'Value', false); app.TickOutChk.ValueChangedFcn = @(src, event) app.safeRun(@() app.UIChanged(src, event), '更新刻度方向');
             app.GridLineChk = uicheckbox(r2, 'Text', '背景网格线', 'Value', true); app.GridLineChk.ValueChangedFcn = @(src, event) app.safeRun(@() app.UIChanged(src, event), '更新网格线');
             app.LgdVisibleChk = uicheckbox(r2, 'Text', '显示图例', 'Value', true); app.LgdVisibleChk.ValueChangedFcn = @(src, event) app.safeRun(@() app.UIChanged(src, event), '更新图例显示');
             app.LgdBgChk = uicheckbox(r2, 'Text', '图例白底', 'Value', true); app.LgdBgChk.ValueChangedFcn = @(src, event) app.safeRun(@() app.UIChanged(src, event), '更新图例背景');
             app.LgdBorderChk = uicheckbox(r2, 'Text', '图例边框', 'Value', false); app.LgdBorderChk.ValueChangedFcn = @(src, event) app.safeRun(@() app.UIChanged(src, event), '更新图例边框');
             uilabel(r2, 'Text', '图例列数');
             app.LgdColsEdit = uieditfield(r2, 'numeric', 'Value', 2, 'Limits', [1 10], 'RoundFractionalValues', 'on'); app.LgdColsEdit.ValueChangedFcn = @(src, event) app.safeRun(@() app.UIChanged(src, event), '更新图例列数');
-            
+
             % 第三排：滑块
             r3 = uigridlayout(app.BottomLayout, [1, 6]); r3.Layout.Row = 3;
             r3.ColumnWidth = {60, '1x', 50, 60, '1x', 50}; r3.Padding = [10, 0, 10, 0];
-            
+
             uilabel(r3, 'Text', '图例水平', 'FontWeight', 'bold');
             app.LgdXSlider = uislider(r3, 'Limits', [0, 1], 'Value', 0.05);
             app.LgdXSlider.MajorTicks = [0, 0.2, 0.4, 0.6, 0.8, 1]; app.LgdXSlider.MinorTicks = 0:0.05:1;
             app.LgdXSlider.ValueChangingFcn = @(src, event) app.safeRun(@() app.LgdXSliderChanging(event), '拖动图例水平位置');
             app.LgdXEdit = uieditfield(r3, 'numeric', 'Value', 0.05, 'Limits', [0 1]); app.LgdXEdit.ValueChangedFcn = @(src, event) app.safeRun(@() app.LgdXEditChanged(src, event), '更新图例水平位置');
-            
+
             uilabel(r3, 'Text', '图例垂直', 'FontWeight', 'bold');
-            app.LgdYSlider = uislider(r3, 'Limits', [0, 1], 'Value', 0.85); 
+            app.LgdYSlider = uislider(r3, 'Limits', [0, 1], 'Value', 0.85);
             app.LgdYSlider.MajorTicks = [0, 0.2, 0.4, 0.6, 0.8, 1]; app.LgdYSlider.MinorTicks = 0:0.05:1;
             app.LgdYSlider.ValueChangingFcn = @(src, event) app.safeRun(@() app.LgdYSliderChanging(event), '拖动图例垂直位置');
             app.LgdYEdit = uieditfield(r3, 'numeric', 'Value', 0.85, 'Limits', [0 1]); app.LgdYEdit.ValueChangedFcn = @(src, event) app.safeRun(@() app.LgdYEditChanged(src, event), '更新图例垂直位置');
